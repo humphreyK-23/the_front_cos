@@ -28,8 +28,8 @@ public/maps
 
 ## Ignore 'em
 .claude/
-favicon.svg
-icons.svg
+public/
+
 
 # self-signed HTTPS certificate for `npm run dev:phone`
 certs/

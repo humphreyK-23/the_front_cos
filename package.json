@@ -1,0 +1,39 @@
+{
+  "name": "thefront_cos",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:phone": "node scripts/make-cert.mjs && vite --mode phone",
+    "build": "vite build",
+    "lint": "eslint .",
+    "format": "prettier --write \"src/**/*.{js,jsx,css,json}\"",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "^1.20.0",
+    "leaflet": "^1.9.4",
+    "leaflet-imageoverlay-rotated": "^0.2.1",
+    "lucide-react": "^1.50.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-leaflet": "^5.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/vite": "^4.1.11",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "autoprefixer": "^10.6.1",
+    "eslint": "^10.10.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.6",
+    "globals": "^17.12.0",
+    "postcss": "^8.5.28",
+    "prettier": "^3.4.2",
+    "tailwindcss": "^4.3.3",
+    "vite": "^8.3.0"
+  }
+}

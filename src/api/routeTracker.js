@@ -108,7 +108,61 @@ export class RouteTracker {
     this.offset = { x: 0, y: 0 }
     this.status = this.legs.length ? 'tracking' : 'idle'
     this.distanceFromRoute = null
+    // Route metres at which each leg starts, for whole-journey distances.
+    this.legStarts = []
+    let start = 0
+    for (const leg of this.legs) {
+      this.legStarts.push(start)
+      start += leg.length
+    }
+    this.totalLength = start
     this.settleAtLegEnd()
+  }
+
+  /** Route metres of the point on the route nearest (lat, lng) on `floor`, or null. */
+  locate(lat, lng, floor) {
+    if (!this.project) return null
+    const { x, y } = this.project(lat, lng)
+    let best = null
+    this.legs.forEach((leg, index) => {
+      if (leg.floor !== Number(floor)) return
+      const hit = leg.points.length === 1 ? { s: 0, distance: Math.hypot(x - leg.points[0].x, y - leg.points[0].y) } : projectOnto(leg, x, y, 0, leg.length)
+      if (hit && (!best || hit.distance < best.distance)) best = { s: this.legStarts[index] + hit.s, distance: hit.distance }
+    })
+    return best ? best.s : null
+  }
+
+  /**
+   * The user has confirmed where they are (a landmark question): move the
+   * marker there and re-measure the GPS offset from the latest fixes. Only
+   * moves within the current floor's leg; floor changes stay explicit.
+   */
+  snapTo(routeMetres) {
+    const leg = this.leg
+    if (!leg || this.status === 'arrived') return false
+    const local = Math.max(0, Math.min(leg.length, routeMetres - this.legStarts[this.legIndex]))
+    const anchor = pointAt(leg, local)
+    if (this.smoothed) {
+      this.offset = {
+        x: this.offset.x + (this.smoothed.x - anchor.x),
+        y: this.offset.y + (this.smoothed.y - anchor.y),
+      }
+      this.smoothed = { x: anchor.x, y: anchor.y }
+    }
+    this.calibration = Array.from({ length: CALIBRATION_FIXES }, () => anchor) // calibration is done
+    this.progress = local
+    this.status = 'tracking'
+    this.settleAtLegEnd()
+    return true
+  }
+
+  /** The user is not at the stairs yet: step back a little and keep tracking. */
+  backOff(metres) {
+    if (this.status !== 'at_stairs' || !this.leg) return false
+    this.progress = Math.max(0, this.leg.length - metres)
+    this.smoothed = null
+    this.status = 'tracking'
+    return true
   }
 
   get leg() {
@@ -229,6 +283,8 @@ export class RouteTracker {
       position: { lat: here.lat, lng: here.lng, floor: leg.floor },
       nextFloor: nextIndex === -1 ? null : this.legs[nextIndex].floor,
       remainingM: Math.max(0, remaining),
+      travelledM: this.legStarts[this.legIndex] + this.progress,
+      totalM: this.totalLength,
       distanceFromRouteM: this.distanceFromRoute,
       remainingPolyline,
     }
@@ -243,11 +299,10 @@ export function useRouteTracker({ enabled, polyline }) {
   const trackerRef = useRef(null)
   const [state, setState] = useState({ polyline: null, snapshot: null, error: '' })
 
-  // Before the first fix the marker sits at the start of the route.
-  const initial = useMemo(
-    () => (enabled && polyline?.length ? new RouteTracker(polyline).snapshot() : null),
-    [enabled, polyline],
-  )
+  // A geometry-only copy of the route: used to place steps and landmarks
+  // (locate) during render, and for the marker before the first fix.
+  const geometry = useMemo(() => (polyline?.length ? new RouteTracker(polyline) : null), [polyline])
+  const initial = useMemo(() => (enabled && geometry ? geometry.snapshot() : null), [enabled, geometry])
 
   useEffect(() => {
     if (!enabled || !polyline?.length) return undefined
@@ -286,6 +341,16 @@ export function useRouteTracker({ enabled, polyline }) {
     if (tracker?.reachLegEnd()) setState({ polyline, snapshot: tracker.snapshot(), error: '' })
   }
 
+  const snapTo = (routeMetres) => {
+    const tracker = trackerRef.current
+    if (tracker?.snapTo(routeMetres)) setState({ polyline, snapshot: tracker.snapshot(), error: '' })
+  }
+
+  const backOff = (metres) => {
+    const tracker = trackerRef.current
+    if (tracker?.backOff(metres)) setState({ polyline, snapshot: tracker.snapshot(), error: '' })
+  }
+
   // A snapshot from a previous route (or journey) is never shown for a new one.
   const current = state.polyline === polyline ? state.snapshot : null
   return {
@@ -293,5 +358,8 @@ export function useRouteTracker({ enabled, polyline }) {
     error: enabled ? state.error : '',
     confirmFloorChange,
     reachLegEnd,
+    snapTo,
+    backOff,
+    geometry,
   }
 }

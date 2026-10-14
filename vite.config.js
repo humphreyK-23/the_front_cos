@@ -59,8 +59,7 @@ const presentAsLocal = (proxy) => {
 }
 
 export default defineConfig(({ mode }) => {
-  // `npm run dev:phone`: serve over HTTPS on the local network so a phone on
-  // the same Wi-Fi can open the app and use its location.
+
   const phone = mode === 'phone'
   const https =
     phone && existsSync('certs/dev-key.pem')

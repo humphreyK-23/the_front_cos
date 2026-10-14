@@ -2,9 +2,19 @@
 @import 'leaflet/dist/leaflet.css';
 
 :root {
+  /* KNUST colours: green, yellow, black and white */
+  --cos-green: #0b6e3b;
+  --cos-green-dark: #08552d;
+  --cos-green-light: #e7f3ec;
+  --cos-green-tint: #d7ecdf;
+  --cos-green-border: #b9dcc7;
+  --cos-yellow: #f5c518;
+  --cos-yellow-light: #fff6d1;
+  --cos-black: #111111;
+
   font-family: Inter, 'Segoe UI', sans-serif;
   color: #101828;
-  background: #f5f7fb;
+  background: #f6f8f4;
   line-height: 1.5;
   font-weight: 400;
   font-synthesis: none;
@@ -24,7 +34,7 @@ body,
 }
 
 body {
-  background: linear-gradient(180deg, #eef2ff 0%, #f8fafc 100%);
+  background: linear-gradient(180deg, #eef6f0 0%, #f8faf7 100%);
 }
 
 button,

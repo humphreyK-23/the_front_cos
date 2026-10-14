@@ -32,19 +32,13 @@ function SearchBar({
           placeholder={placeholder}
           aria-label={label}
         />
+        {selectedRoom ? <small className="floor-badge in-input">{getFloorLabel(selectedRoom.floor)}</small> : null}
         {value && !disabled ? (
           <button type="button" className="clear-button" onClick={onClear} aria-label={`Clear ${label}`}>
             <X size={14} />
           </button>
         ) : null}
       </div>
-
-      {selectedRoom ? (
-        <div className="selected-room-pill">
-          <span>{getRoomName(selectedRoom)}</span>
-          <small className="floor-badge">{getFloorLabel(selectedRoom.floor)}</small>
-        </div>
-      ) : null}
 
       {note ? <p className="field-note">{note}</p> : null}
 

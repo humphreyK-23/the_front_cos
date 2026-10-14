@@ -25,8 +25,8 @@ const PAN_BOUNDS = L.latLngBounds(COS_IMAGE_BOUNDS).pad(0.25)
 const currentLocationIcon = L.divIcon({
   className: 'custom-user-location-marker',
   html: `<div style="position:relative;display:flex;align-items:center;justify-content:center;width:24px;height:24px;">
-          <div style="position:absolute;width:24px;height:24px;background-color:rgba(59,130,246,0.4);border-radius:50%;animation:ping 1s cubic-bezier(0,0,0.2,1) infinite;"></div>
-          <div style="width:14px;height:14px;background-color:#2563eb;border:2px solid #ffffff;border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,0.2);"></div>
+          <div style="position:absolute;width:24px;height:24px;background-color:rgba(245,197,24,0.55);border-radius:50%;animation:ping 1s cubic-bezier(0,0,0.2,1) infinite;"></div>
+          <div style="width:14px;height:14px;background-color:#0b6e3b;border:3px solid #f5c518;border-radius:50%;box-shadow:0 2px 4px rgba(0,0,0,0.2);"></div>
          </div>`,
   iconSize: [24, 24],
   iconAnchor: [12, 12],
@@ -34,8 +34,9 @@ const currentLocationIcon = L.divIcon({
 
 const destinationPinIcon = L.divIcon({
   className: 'custom-destination-marker',
-  html: `<div style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;color:#dc2626;">
+  html: `<div style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;color:#111111;">
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" style="width:32px;height:32px;filter:drop-shadow(0 2px 3px rgba(0,0,0,0.3));">
+            <circle cx="12" cy="10.5" r="3.4" fill="#f5c518" />
             <path fill-rule="evenodd" d="M11.54 22.351l.07.04.028.016a.76.76 0 00.723 0l.028-.015.071-.041a16.975 16.975 0 001.144-.742 19.58 19.58 0 002.683-2.282c1.944-1.99 3.963-4.98 3.963-8.827a8.25 8.25 0 00-16.5 0c0 3.846 2.02 6.837 3.963 8.827a19.58 19.58 0 002.682 2.282 16.975 16.975 0 001.145.742zM12 13.5a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd" />
           </svg>
          </div>`,
@@ -158,7 +159,7 @@ export default function IndoorMap({
               key={`${floorKey}-${index}`}
               positions={segment}
               pathOptions={{
-                color: '#2563eb',
+                color: '#0b6e3b',
                 weight: 5,
                 opacity: 1.0,
                 lineCap: 'round',

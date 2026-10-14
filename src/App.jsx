@@ -1,6 +1,8 @@
-import { useCallback, useMemo, useState } from 'react'
-import { ChevronDown, ChevronUp, Crosshair, MapPinned, Navigation, Play, Search, Square } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { ChevronDown, ChevronUp, Crosshair, Search } from 'lucide-react'
 import './App.css'
+import './journey.css'
+import './glass.css'
 import SearchBar from './components/Search/SearchBar'
 import FloorControls from './components/Map/FloorControls'
 import IndoorMap from './components/Map/IndoorMap'
@@ -10,6 +12,10 @@ import { useRouteTracker } from './api/routeTracker'
 import { FLOORS, getFloorLabel, getFloorValue, COS_BOUNDS, COS_FLOOR_CORNERS } from './utils/floors' 
 import { getRoomName } from './utils/rooms'
 import RouteSummaryDrawer from './components/Navigation/RouteSummaryDrawer'
+import DirectionBar from './components/Navigation/DirectionBar'
+import JourneyIntro from './components/Navigation/JourneyIntro'
+import LandmarkPrompt from './components/Navigation/LandmarkPrompt'
+import { activeCheckpoint, buildCheckpoints, buildSteps, nearbyLandmarks, nextStep } from './utils/journey'
 
 // Build config dynamically from object entries instead of .map
 const defaultFloorPlanConfig = Object.fromEntries(
@@ -18,38 +24,6 @@ const defaultFloorPlanConfig = Object.fromEntries(
     { url: floor.url || floor.image, bounds: floor.bounds || COS_BOUNDS || COS_FLOOR_CORNERS, corners: floor.corners || COS_FLOOR_CORNERS },
   ])
 )
-
-// Status of the route-locked journey, shown over the map.
-function JourneyBanner({ snapshot, onReachedFloor, onReachedEnd, destinationName }) {
-  if (snapshot.status === 'arrived') {
-    return <div className="journey-banner arrived">You have arrived at {destinationName}.</div>
-  }
-  if (snapshot.status === 'at_stairs') {
-    const direction = snapshot.nextFloor > snapshot.floor ? 'up' : 'down'
-    return (
-      <div className="journey-banner">
-        <span>
-          Take the stairs {direction} to <strong>{getFloorLabel(snapshot.nextFloor)}</strong>.
-        </span>
-        <button type="button" onClick={onReachedFloor}>
-          I'm on {getFloorLabel(snapshot.nextFloor)} now
-        </button>
-      </div>
-    )
-  }
-  return (
-    <div className="journey-banner">
-      <span>
-        {snapshot.calibrating
-          ? 'Locking onto your position… stand still for a moment.'
-          : `${Math.round(snapshot.remainingM)} m to go${snapshot.nextFloor !== null ? ` · stairs to ${getFloorLabel(snapshot.nextFloor)} ahead` : ''}`}
-      </span>
-      <button type="button" className="secondary" onClick={onReachedEnd}>
-        {snapshot.nextFloor !== null ? "I'm at the stairs" : "I've arrived"}
-      </button>
-    </div>
-  )
-}
 
 function App() {
   const [originQuery, setOriginQuery] = useState('')
@@ -65,7 +39,11 @@ function App() {
   const [mapMode, setMapMode] = useState('hybrid')
   const [navigationState, setNavigationState] = useState('idle')
   const [journeyNotice, setJourneyNotice] = useState('')
-  const [panelCollapsed, setPanelCollapsed] = useState(false)
+  // On phones the search starts folded into one tappable bar and opens full
+  // screen; on larger screens it is a floating panel.
+  const [panelCollapsed, setPanelCollapsed] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches,
+  )
   const [locating, setLocating] = useState(false)
   const [locationNote, setLocationNote] = useState('')
   const [nearbyOrigins, setNearbyOrigins] = useState([])
@@ -75,6 +53,12 @@ function App() {
   const [askingFloor, setAskingFloor] = useState(false)
   // The route as planned when the journey started; the tracker follows it.
   const [lockedPolyline, setLockedPolyline] = useState(null)
+  // Landmark questions already answered (or skipped) on this journey.
+  const [answeredCheckpoints, setAnsweredCheckpoints] = useState(() => new Set())
+  // Follow-up screens of a landmark question ("what do you see?", feedback).
+  const [promptOverride, setPromptOverride] = useState(null)
+  const [startToast, setStartToast] = useState(false)
+  const timers = useRef([])
 
   // "My location", after the user has said which floor they are on: take the
   // best GPS fix available, then offer the closest rooms on that floor.
@@ -149,6 +133,88 @@ function App() {
     tracker.confirmFloorChange()
     if (nextFloor !== null && nextFloor !== undefined) setActiveFloor(nextFloor)
   }
+
+  const later = (callback, ms) => {
+    timers.current.push(setTimeout(callback, ms))
+  }
+  useEffect(() => {
+    const pending = timers.current
+    return () => pending.forEach(clearTimeout)
+  }, [])
+
+  // Turn-by-turn: every instruction placed on the locked route, the next one
+  // ahead of the user, and the landmark questions along the way.
+  const steps = useMemo(
+    () => (isNavigating ? buildSteps(routeData, tracker.geometry) : []),
+    [isNavigating, routeData, tracker.geometry],
+  )
+  const checkpoints = useMemo(
+    () => (isNavigating ? buildCheckpoints(routeData, steps, tracker.geometry) : []),
+    [isNavigating, routeData, steps, tracker.geometry],
+  )
+  const upcomingStep = tracker.snapshot ? nextStep(steps, tracker.snapshot.travelledM) : null
+  const pendingCheckpoint = activeCheckpoint(checkpoints, answeredCheckpoints, tracker.snapshot)
+  const prompt = promptOverride ?? (pendingCheckpoint ? { stage: 'ask', checkpoint: pendingCheckpoint } : null)
+
+  const showFeedback = (message) => {
+    setPromptOverride({ stage: 'feedback', message })
+    later(() => setPromptOverride((current) => (current?.stage === 'feedback' ? null : current)), 2500)
+  }
+
+  const markAnswered = (checkpoint) =>
+    setAnsweredCheckpoints((answered) => new Set(answered).add(checkpoint.id))
+
+  const handleLandmarkYes = () => {
+    const checkpoint = prompt?.checkpoint
+    if (!checkpoint) return
+    // A confirmed landmark is an exact position: snap to it.
+    if (checkpoint.kind === 'turn' && Number.isFinite(checkpoint.landmarkS)) tracker.snapTo(checkpoint.landmarkS)
+    markAnswered(checkpoint)
+    showFeedback('Great, you are on course.')
+  }
+
+  const handleLandmarkNo = () => {
+    const checkpoint = prompt?.checkpoint
+    if (!checkpoint) return
+    markAnswered(checkpoint)
+    if (checkpoint.kind === 'stairs') {
+      // The tracker thought the user was at the stairs; they are not yet.
+      tracker.backOff(6)
+      showFeedback('Keep following the line, the stairs are just ahead.')
+      return
+    }
+    const options = nearbyLandmarks(routeData, tracker.geometry, tracker.snapshot, checkpoint.landmark)
+    setPromptOverride(options.length ? { stage: 'alternatives', checkpoint, options } : { stage: 'lost', checkpoint })
+  }
+
+  const handleLandmarkPick = (option) => {
+    tracker.snapTo(option.s)
+    showFeedback(`Thanks, your position is updated to ${option.label}.`)
+  }
+
+  // Keep the screen on while navigating: a locked phone stops reporting location.
+  useEffect(() => {
+    if (!isNavigating || !('wakeLock' in navigator)) return undefined
+    let lock = null
+    let cancelled = false
+    const acquire = () => {
+      if (document.visibilityState !== 'visible') return
+      navigator.wakeLock
+        .request('screen')
+        .then((sentinel) => {
+          if (cancelled) sentinel.release()
+          else lock = sentinel
+        })
+        .catch(() => {})
+    }
+    acquire()
+    document.addEventListener('visibilitychange', acquire)
+    return () => {
+      cancelled = true
+      document.removeEventListener('visibilitychange', acquire)
+      lock?.release().catch(() => {})
+    }
+  }, [isNavigating])
 
   // What the map shows: during a journey, only what is left to walk.
   const displayRoute = useMemo(
@@ -230,11 +296,18 @@ function App() {
       getFloorValue(startNode.floor) ?? getFloorValue(selectedOrigin?.floor) ?? 0,
     )
     setJourneyNotice('')
+    setAnsweredCheckpoints(new Set())
+    setPromptOverride(null)
     setNavigationState('navigating')
+    setStartToast(true)
+    later(() => setStartToast(false), 5000)
   }
 
   const handleEndJourney = () => {
     setJourneyNotice('')
+    setStartToast(false)
+    setPromptOverride(null)
+    setAnsweredCheckpoints(new Set())
     setLockedPolyline(null)
     setPendingOrigin(null)
     setLocationNote('')
@@ -256,35 +329,69 @@ function App() {
   }, [isNavigating, routeData, tracker.snapshot])
 
   return (
-    <div className="app-shell">
+    <div
+      className={`app-shell ${navigationState === 'navigating' ? 'is-navigating' : ''} ${
+        navigationState === 'idle' && !panelCollapsed ? 'search-open' : ''
+      }`}
+    >
+      {navigationState !== 'navigating' ? (
       <header className="topbar">
         <div className="brand-block">
-          <div className="brand-icon">
-            <Navigation size={18} />
-          </div>
+          <img className="brand-icon" src="/brand/logo.svg" alt="" width="44" height="44" />
           <div>
-            <p className="eyebrow">College wayfinding</p>
-            <h1>COS Indoor Naviagtion </h1>
+            <p className="eyebrow">College of Science · KNUST</p>
+            <h1>COS Indoor Navigation</h1>
           </div>
         </div>
       </header>
+      ) : null}
 
       <main className="app-layout">
+        {navigationState === 'route_planned' ? (
+          <JourneyIntro
+            origin={selectedOrigin}
+            destination={selectedDestination}
+            route={routeData}
+            onStart={handleStartJourney}
+            onChange={resetPlannedRoute}
+          />
+        ) : null}
+
+        {isNavigating ? (
+          <DirectionBar
+            snapshot={tracker.snapshot}
+            step={upcomingStep}
+            destinationName={selectedDestination ? getRoomName(selectedDestination) : 'your destination'}
+            connection={journeyStatus}
+            onExit={handleEndJourney}
+            onReachedFloor={handleReachedFloor}
+            onReachedEnd={tracker.reachLegEnd}
+          />
+        ) : null}
+        {isNavigating && (journeyNotice || locationError) ? (
+          <p className="journey-notice">{journeyNotice || locationError}</p>
+        ) : null}
+
+        {navigationState === 'idle' ? (
         <section className={`panel search-panel ${panelCollapsed ? 'collapsed' : ''}`}>
-          <div className="panel-header">
-            <div className="label-wrap">
+          <button
+            type="button"
+            className="panel-header"
+            onClick={() => setPanelCollapsed((collapsed) => !collapsed)}
+            aria-expanded={!panelCollapsed}
+          >
+            <span className="label-wrap">
               <Search size={18} />
-              <h2>Find your route</h2>
-            </div>
-            <button
-              type="button"
-              className="panel-toggle"
-              onClick={() => setPanelCollapsed((collapsed) => !collapsed)}
-              aria-label={panelCollapsed ? 'Expand search panel' : 'Collapse search panel'}
-            >
+              <span className="panel-title">
+                {panelCollapsed && (selectedOrigin || selectedDestination)
+                  ? [selectedOrigin, selectedDestination].filter(Boolean).map(getRoomName).join(' → ')
+                  : 'Find your route'}
+              </span>
+            </span>
+            <span className="panel-toggle" aria-hidden="true">
               {panelCollapsed ? <ChevronDown size={18} /> : <ChevronUp size={18} />}
-            </button>
-          </div>
+            </span>
+          </button>
 
           <div className="panel-body">
             <SearchBar
@@ -437,56 +544,28 @@ function App() {
               }}
             />
 
-            <div className="route-meta">
-              <div className="meta-pill">
-                <MapPinned size={16} />
-                <span>{selectedOrigin ? `From ${getRoomName(selectedOrigin)}` : 'Choose start'}</span>
-              </div>
-              <div className="meta-pill">
-                <span>{selectedDestination ? `To ${getRoomName(selectedDestination)}` : 'Choose destination'}</span>
-              </div>
-            </div>
-
-            {navigationState === 'navigating' ? (
-              <button className="journey-button end-journey" type="button" onClick={handleEndJourney}>
-                <Square size={16} /> End Journey
-              </button>
-            ) : navigationState === 'route_planned' ? (
-              <button className="journey-button start-journey" type="button" onClick={handleStartJourney}>
-                <Play size={16} /> Start Journey
-              </button>
-            ) : (
-              <button className="directions-button" type="button" onClick={handleGetDirections} disabled={routeLoading || !selectedOrigin || !selectedDestination}>
-                {routeLoading ? 'Planning route…' : 'Get Directions'}
-              </button>
-            )}
+            <button className="directions-button" type="button" onClick={handleGetDirections} disabled={routeLoading || !selectedOrigin || !selectedDestination}>
+              {routeLoading ? 'Planning route…' : 'Get Directions'}
+            </button>
 
             {routeError ? <p className="route-error">{routeError}</p> : null}
-            {isNavigating && (journeyNotice || locationError) ? (
-              <p className="route-error">{journeyNotice || locationError}</p>
-            ) : null}
           </div>
         </section>
+        ) : null}
 
-        <section className="map-panel">
+        <section className={`map-panel ${isNavigating ? 'is-navigating' : ''}`}>
           <div className="map-toolbar">
             <div className="active-floor-badge">{getFloorLabel(activeFloor)}</div>
-            {isNavigating ? (
-              <div className="active-floor-badge">
-                {journeyStatus === 'live' ? 'Live' : journeyStatus === 'reconnecting' ? 'Reconnecting…' : 'Connecting…'}
-              </div>
-            ) : null}
           </div>
-          
 
-
-          {isNavigating && tracker.snapshot ? (
-            <JourneyBanner
-              snapshot={tracker.snapshot}
-              onReachedFloor={handleReachedFloor}
-              onReachedEnd={tracker.reachLegEnd}
-              destinationName={selectedDestination ? getRoomName(selectedDestination) : 'your destination'}
-            />
+          {startToast ? (
+            <div className="start-toast" role="status">
+              <img src="/brand/logo.svg" alt="" width="40" height="40" />
+              <p>
+                <strong>We have your current location.</strong>
+                Kindly stay on course to the end of your journey.
+              </p>
+            </div>
           ) : null}
 
           <IndoorMap
@@ -498,20 +577,34 @@ function App() {
             selectedDestination={selectedDestination}
             livePosition={trackedPosition}
           />
-          {/* Route summary: appears once directions have been fetched */}
-          <RouteSummaryDrawer
-            routeData={routeData}
-            distanceLabel={routeDistance}
-            navigationState={navigationState}
-            onStartJourney={handleStartJourney}
-            onSelectFloor={setActiveFloor}
-          />
+          {/* Before the journey: the steps. During it: landmark questions. */}
+          {navigationState === 'route_planned' ? (
+            <RouteSummaryDrawer
+              routeData={routeData}
+              distanceLabel={routeDistance}
+              navigationState={navigationState}
+              onSelectFloor={setActiveFloor}
+            />
+          ) : null}
+          {isNavigating ? (
+            <LandmarkPrompt
+              prompt={prompt}
+              onYes={handleLandmarkYes}
+              onNo={handleLandmarkNo}
+              onPick={handleLandmarkPick}
+              onNoneOfThese={() => setPromptOverride({ stage: 'lost' })}
+              onKeepGoing={() => setPromptOverride(null)}
+              onEndJourney={handleEndJourney}
+            />
+          ) : null}
 
+          {!isNavigating ? (
           <FloorControls
             activeFloor={activeFloor}
             onFloorChange={setActiveFloor}
             floors={FLOORS}
           />
+          ) : null}
         </section>
       </main>
     </div>

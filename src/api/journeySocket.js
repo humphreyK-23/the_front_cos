@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import apiClient from './client'
+import apiClient, { API_KEY } from './client'
 
 // Live journey connection to the backend (/api/ws/journey).
 //
@@ -12,6 +12,8 @@ const journeySocketUrl = () => {
   const base = new URL(apiClient.defaults.baseURL, window.location.href)
   base.protocol = base.protocol === 'https:' ? 'wss:' : 'ws:'
   base.pathname = `${base.pathname.replace(/\/$/, '')}/ws/journey`
+  // Browsers cannot add headers to a websocket, so the key goes in the URL.
+  if (API_KEY) base.searchParams.set('api_key', API_KEY)
   return base.toString()
 }
 

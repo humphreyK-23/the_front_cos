@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>A · Pin and floors</title>
+  <rect width="512" height="512" rx="112" fill="#0B6E3B"/>
+  <path d="M256 70c-82 0-148 63-148 142 0 104 148 230 148 230s148-126 148-230c0-79-66-142-148-142z" fill="#FFFFFF"/>
+  <rect x="176" y="150" width="160" height="34" rx="10" fill="#F5C518"/>
+  <rect x="176" y="198" width="160" height="34" rx="10" fill="#0B6E3B"/>
+  <rect x="176" y="246" width="160" height="34" rx="10" fill="#0B6E3B" opacity="0.75"/>
+  <rect x="176" y="294" width="160" height="34" rx="10" fill="#111111"/>
+</svg>

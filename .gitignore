@@ -28,8 +28,6 @@ public/maps
 
 ## Ignore 'em
 .claude/
-public/
-
 
 # self-signed HTTPS certificate for `npm run dev:phone`
 certs/

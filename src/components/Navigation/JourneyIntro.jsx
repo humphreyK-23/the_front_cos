@@ -1,7 +1,7 @@
 import { Play } from 'lucide-react'
 import { getFloorLabel, FLOORS } from '../../utils/floors'
 import { getRoomName } from '../../utils/rooms'
-import { roomCodeOf, walkingMinutes } from '../../utils/journey'
+import { roomCodeOf } from '../../utils/journey'
 
 const floorName = (floor) => FLOORS[String(floor)]?.label?.replace(/\s*\(.*\)$/, '') ?? getFloorLabel(floor)
 
@@ -33,9 +33,7 @@ export default function JourneyIntro({ origin, destination, route, onStart, onCh
       <p className="eyebrow">Ready when you are</p>
       <p className="journey-intro-text">
         You are at <strong>{describeRoom(origin)}</strong> on the {floorName(startFloor)}.{' '}
-        <strong>{describeRoom(destination)}</strong> is {Math.round(metres)} m away, about {walkingMinutes(metres)}{' '}
-        {walkingMinutes(metres) === 1 ? 'minute' : 'minutes'}
-        {via}.
+        <strong>{describeRoom(destination)}</strong> is {Math.round(metres)} m away{via}.
       </p>
       <p className="journey-intro-hint">Follow the green line. We will check in with you at the stairs and at turns.</p>
       <div className="journey-intro-actions">

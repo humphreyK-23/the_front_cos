@@ -33,7 +33,8 @@ const pwa = VitePWA({
     // The app itself is saved on the phone; the floor plans are cached on
     // first view and refreshed in the background.
     globPatterns: ['**/*.{js,css,html,svg,png,webmanifest}'],
-    globIgnores: ['maps/**'],
+    // mine.png is the full-size original of owner-logo.png; the app never loads it.
+    globIgnores: ['maps/**', 'brand/mine.png'],
     navigateFallback: '/index.html',
     navigateFallbackDenylist: [/^\/api\//],
     runtimeCaching: [

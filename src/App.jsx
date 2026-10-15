@@ -15,6 +15,7 @@ import RouteSummaryDrawer from './components/Navigation/RouteSummaryDrawer'
 import DirectionBar from './components/Navigation/DirectionBar'
 import JourneyIntro from './components/Navigation/JourneyIntro'
 import LandmarkPrompt from './components/Navigation/LandmarkPrompt'
+import OwnerMark from './components/Brand/OwnerMark'
 import { activeCheckpoint, buildCheckpoints, buildSteps, nearbyLandmarks, nextStep } from './utils/journey'
 
 // Build config dynamically from object entries instead of .map
@@ -231,22 +232,24 @@ function App() {
     setRouteError('')
   }
 
+  // Type-ahead: a search runs on every letter. Answers can arrive out of
+  // order, so only the answer to the latest letters typed is shown.
+  const latestSearch = useRef({ origin: 0, destination: 0 })
   const handleRoomSearch = async (query, target) => {
     const cleanQuery = query.trim()
+    const setResults = target === 'origin' ? setOriginResults : setDestinationResults
+    const ticket = ++latestSearch.current[target]
 
     if (!cleanQuery) {
-      if (target === 'origin') setOriginResults([])
-      if (target === 'destination') setDestinationResults([])
+      setResults([])
       return
     }
 
     try {
       const rooms = await searchRooms(cleanQuery)
-      if (target === 'origin') setOriginResults(rooms)
-      if (target === 'destination') setDestinationResults(rooms)
-    } catch (error) {
-      if (target === 'origin') setOriginResults([])
-      if (target === 'destination') setDestinationResults([])
+      if (ticket === latestSearch.current[target]) setResults(rooms)
+    } catch {
+      if (ticket === latestSearch.current[target]) setResults([])
     }
   }
 
@@ -554,6 +557,8 @@ function App() {
         ) : null}
 
         <section className={`map-panel ${isNavigating ? 'is-navigating' : ''}`}>
+          <OwnerMark />
+
           <div className="map-toolbar">
             <div className="active-floor-badge">{getFloorLabel(activeFloor)}</div>
           </div>

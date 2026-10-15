@@ -28,6 +28,12 @@ public/maps
 
 ## Ignore 'em
 .claude/
+public/brand/mine.png
+public/brand/icon-192.png
+public/brand/icon-512.png
+public/brand/icon-180.png
+public/brand/owner-logo.png
+icons.svg
 
 # self-signed HTTPS certificate for `npm run dev:phone`
 certs/

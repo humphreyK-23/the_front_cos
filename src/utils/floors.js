@@ -38,6 +38,7 @@ const floor = (code, label) => ({
 });
 
 export const FLOORS = {
+  '-2': floor('LB', 'Lower Basement (LB)'),
   '-1': floor('B', 'Basement (B)'),
   '0': floor('GF', 'Ground Floor (GF)'),
   '1': floor('FF', 'First Floor (FF)'),

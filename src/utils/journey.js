@@ -4,7 +4,6 @@
 // Distances here are "route metres": distance along the journey's polyline,
 // the same units as the tracker's travelledM.
 
-const WALKING_SPEED_MS = 1.3
 const TURN_QUESTION_AFTER_M = 2 // ask shortly after the user has made the turn
 const MIN_QUESTION_GAP_M = 6 // never two questions closer than this
 const STALE_QUESTION_M = 15 // drop an unanswered turn question once well past it
@@ -73,7 +72,6 @@ export function nextStep(steps, travelledM) {
   return steps.find((step) => step.s > travelledM + 0.5) ?? steps[steps.length - 1] ?? null
 }
 
-export const walkingMinutes = (metres) => Math.max(1, Math.round(metres / WALKING_SPEED_MS / 60))
 
 /**
  * Landmark questions: one at every stair and at most turns (where there is a

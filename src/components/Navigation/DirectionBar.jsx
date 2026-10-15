@@ -1,7 +1,6 @@
-import { X } from 'lucide-react'
 import ManeuverIcon from './ManeuverIcon'
 import { getFloorLabel } from '../../utils/floors'
-import { isFloorChange, isTurn, walkingMinutes } from '../../utils/journey'
+import { isFloorChange, isTurn } from '../../utils/journey'
 
 const roundDistance = (metres) => (metres >= 20 ? Math.round(metres / 5) * 5 : Math.max(1, Math.round(metres)))
 
@@ -93,14 +92,14 @@ export default function DirectionBar({
           <p className="direction-title">{content.title}</p>
           {content.detail ? <p className="direction-detail">{content.detail}</p> : null}
         </div>
-        <button type="button" className="direction-exit" onClick={onExit} aria-label="End journey">
-          <X size={18} />
+        <button type="button" className="direction-exit" onClick={onExit}>
+          End journey
         </button>
       </div>
       <div className="direction-meta">
         <img className="direction-logo" src="/brand/logo.svg" alt="COS Indoor Navigation" width="22" height="22" />
         <span className="direction-remaining">
-          <strong>{Math.round(snapshot.remainingM)} m</strong> · {walkingMinutes(snapshot.remainingM)} min
+          <strong>{Math.round(snapshot.remainingM)} m</strong> to go
         </span>
         <span className="direction-floor">{getFloorLabel(snapshot.floor)}</span>
         <span className={`direction-connection ${connection === 'live' ? 'live' : ''}`}>

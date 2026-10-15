@@ -543,9 +543,22 @@ h1 {
     gap: 12px;
   }
 
+  /* The map fills whatever is left under the header, exactly to the
+     bottom of the screen (so nothing pinned to its bottom is cut off). */
+  .app-shell {
+    height: 100vh;
+    height: 100dvh;
+    min-height: 0;
+  }
+
+  .app-layout {
+    flex: 1;
+    min-height: 0;
+  }
+
   .map-panel {
-    height: calc(100vh - 100px);
-    min-height: 420px;
+    height: 100%;
+    min-height: 0;
   }
 
   .map-shell {
@@ -569,11 +582,13 @@ h1 {
     right: 10px;
   }
 
+  /* Bottom-right: the bottom-left corner belongs to the owner's logo. */
   .map-toolbar {
     top: auto;
-    bottom: 16px;
-    left: 16px;
-    justify-content: flex-start;
+    bottom: 22px;
+    left: auto;
+    right: 10px;
+    justify-content: flex-end;
   }
 }
 

@@ -66,6 +66,20 @@
         background: #f5c518;
         animation: splash-load 1.1s ease-in-out infinite;
       }
+      /* The owner's logo: a faint watermark near the bottom of the screen */
+      #splash .owner {
+        position: absolute;
+        bottom: calc(env(safe-area-inset-bottom, 0px) + 28px);
+        width: auto;
+        height: 56px;
+        max-width: 60vw;
+        border-radius: 0;
+        box-shadow: none;
+        object-fit: contain;
+        opacity: 1;
+        filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.35));
+        animation: none;
+      }
       @keyframes splash-load {
         from { transform: translateX(-100%); }
         to { transform: translateX(260%); }
@@ -82,6 +96,7 @@
       <h1>COS Indoor Navigation</h1>
       <p>College of Science · KNUST</p>
       <div class="bar"></div>
+      <img class="owner" src="/brand/owner-logo.png" alt="" onerror="this.remove()" />
     </div>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>

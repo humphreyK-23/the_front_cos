@@ -34,6 +34,7 @@ public/brand/icon-512.png
 public/brand/icon-180.png
 public/brand/owner-logo.png
 icons.svg
+design/
 
 # self-signed HTTPS certificate for `npm run dev:phone`
 certs/

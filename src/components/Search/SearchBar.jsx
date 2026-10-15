@@ -68,7 +68,11 @@ function SearchBar({
       ) : null}
 
       {value && !selectedRoom && results.length === 0 ? (
-        <p className="empty-search">No room found. <br>Kindly check the room name properly</br>.</p>
+        <p className="empty-search">
+          No room found.
+          <br />
+          Kindly check the room name properly.
+        </p>
       ) : null}
     </div>
   )

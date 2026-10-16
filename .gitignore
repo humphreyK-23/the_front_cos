@@ -23,8 +23,7 @@ dist-ssr
 *.sln
 *.sw?
 
-## Building Plans
-public/maps
+
 
 ## Ignore 'em
 .claude/

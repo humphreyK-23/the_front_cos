@@ -23,8 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 
-
-
 ## Ignore 'em
 .claude/
 public/brand/mine.png

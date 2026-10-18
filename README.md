@@ -1,3 +1,11 @@
+## the-front-cos
+this is an indoor navigation system for the College of Science, KNUST. This is to help freshers, visitors,
+generally everyone who want to find themselves around the College.
+
+this is the front guy responsible for the pwa; ``https://cos-indoor-navigation.vercel.app``
+Supabase for the backend and database as well as render for hosting the them, then obviously vercel
+to wrap everything up.
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.

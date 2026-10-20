@@ -8,7 +8,7 @@ to wrap everything up.
 
 
 ## The Backend
-For reference to the back and see how's he's handling most of the stuff, take a look. ` https://github.com/humphreyK-23/theC.O.S..git`.
+For reference to the back and see how's he's handling most of the stuff, take a look. ` https://github.com/humphreyK-23/theC.O.S..git`.(oh yhh, it's a private repo)
 
 # React + Vite
 

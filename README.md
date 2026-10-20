@@ -6,6 +6,10 @@ this is the front guy responsible for the pwa; ``https://cos-indoor-navigation.v
 Supabase for the backend and database as well as render for hosting the them, then obviously vercel
 to wrap everything up.
 
+
+## The Backend
+For reference to the back and see how's he's handling most of the stuff, take a look. ` https://github.com/humphreyK-23/theC.O.S..git`.
+
 # React + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
